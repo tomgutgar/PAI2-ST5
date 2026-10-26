@@ -1,0 +1,12 @@
+# Claves privadas y secretos: se regeneran con `make seed` (nunca al repositorio)
+*.key
+*.key.nueva
+pki/ca/
+pki/server/
+pki/seed_credentials.csv
+clientes/
+datos/
+# Artefactos
+__pycache__/
+.ruff_cache/
+*.zip

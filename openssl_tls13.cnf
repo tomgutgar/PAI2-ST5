@@ -1,0 +1,16 @@
+# Política TLS de U-Secure (RS2.a, RS2.b) — se carga vía OPENSSL_CONF antes de `import ssl`.
+# Python no puede restringir las suites de TLS 1.3 (set_ciphers no les afecta): por eso este fichero.
+openssl_conf = init
+
+[init]
+ssl_conf = ssl_sect
+
+[ssl_sect]
+system_default = tls13_only
+
+[tls13_only]
+MinProtocol  = TLSv1.3
+MaxProtocol  = TLSv1.3
+Ciphersuites = TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+# Solo ECDHE clásico (sin híbridos post-cuánticos, que OpenSSL 3.5+ negocia por defecto)
+Groups       = X25519:secp384r1

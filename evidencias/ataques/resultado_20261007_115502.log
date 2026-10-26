@@ -1,0 +1,168 @@
+
+A01 · RS4.a, O1, O4
+  Qué hace el atacante : Sniffing pasivo de credenciales: login visto por un tercero en el cable
+  Resultado esperado   : Sin cifrar: la contraseña se ve. Con TLS: 0 apariciones
+  Resultado obtenido   : apariciones de la contraseña en el cable: sin cifrar=1, TLS=0
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:39.798Z | AUDIT | LOGOUT          | 127.0.0.1:46202 | user=atk_pdi | canal=sin_cifrar
+  audit.log            : 2026-10-07T09:54:40.376Z | AUDIT | LOGOUT          | 127.0.0.1:50240 | user=atk_pdi | cn=atk_pdi | serial=1140 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+
+A02 · RS2.a
+  Qué hace el atacante : Downgrade: cliente Python con maximum_version=TLSv1_2 y openssl s_client -tls1_2/-tls1_1/-tls1
+  Resultado esperado   : El servidor rechaza todas las versiones < 1.3
+  Resultado obtenido   : Python TLS 1.2: RECHAZADO TLSV1_ALERT_PROTOCOL_VERSION; -tls1_2: rechazado; -tls1_1: rechazado; -tls1: rechazado
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:40.899Z | AUDIT | TLS_REJECT      | 127.0.0.1:50254 | motivo=UNSUPPORTED_PROTOCOL
+  audit.log            : 2026-10-07T09:54:40.908Z | AUDIT | TLS_REJECT      | 127.0.0.1:50268 | motivo=UNSUPPORTED_PROTOCOL
+  audit.log            : 2026-10-07T09:54:40.913Z | AUDIT | TLS_REJECT      | 127.0.0.1:50272 | motivo=UNSUPPORTED_PROTOCOL
+
+A03 · RS2.b
+  Qué hace el atacante : Cipher suite débil: ofrecer solo TLS_AES_128_GCM_SHA256 / TLS_AES_128_CCM_SHA256
+  Resultado esperado   : NO_SHARED_CIPHER
+  Resultado obtenido   : TLS_AES_128_GCM_SHA256: rechazada; TLS_AES_128_CCM_SHA256: rechazada
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:41.124Z | AUDIT | TLS_REJECT      | 127.0.0.1:50290 | motivo=NO_SHARED_CIPHER
+  audit.log            : 2026-10-07T09:54:41.129Z | AUDIT | TLS_REJECT      | 127.0.0.1:50294 | motivo=NO_SHARED_CIPHER
+
+A04 · RS1.b, RF2
+  Qué hace el atacante : Conexión sin certificado de cliente
+  Resultado esperado   : Rechazo en el handshake; sin acceso a la capa de aplicación
+  Resultado obtenido   : RECHAZADO (TLSV13_ALERT_CERTIFICATE_REQUIRED)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:41.346Z | AUDIT | TLS_REJECT      | 127.0.0.1:50296 | motivo=PEER_DID_NOT_RETURN_A_CERTIFICATE
+
+A05 · RS1.b
+  Qué hace el atacante : Dispositivo con certificado de una CA falsa del atacante (CN=atk_pdi)
+  Resultado esperado   : CERTIFICATE_VERIFY_FAILED / unknown ca
+  Resultado obtenido   : RECHAZADO (TLSV1_ALERT_UNKNOWN_CA)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:41.584Z | AUDIT | TLS_REJECT      | 127.0.0.1:50300 | motivo=CERTIFICATE_VERIFY_FAILED | detalle=self-signed certificate
+
+A06 · RS1.a, RS1.b
+  Qué hace el atacante : Certificado del servidor (serverAuth) presentado como certificado de cliente
+  Resultado esperado   : Rechazo por propósito (EKU)
+  Resultado obtenido   : RECHAZADO (SSLV3_ALERT_UNSUPPORTED_CERTIFICATE)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:41.801Z | AUDIT | TLS_REJECT      | 127.0.0.1:50302 | motivo=CERTIFICATE_VERIFY_FAILED | detalle=unsuitable certificate purpose
+
+A07 · RF2
+  Qué hace el atacante : Certificado válido de A (atk_pdi) + usuario y contraseña correctos de B (atk_pas)
+  Resultado esperado   : LOGIN_FAIL cn_no_coincide
+  Resultado obtenido   : respuesta: {'ok': False, 'error': 'credenciales inválidas'}
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:42.059Z | AUDIT | LOGIN_FAIL      | 127.0.0.1:50310 | user=atk_pas | motivo=cn_no_coincide | cn=atk_pdi | serial=1140 | tls=TLSv1.3 | suite=TLS_AES_256_G
+
+A08 · RF2, RS4.b
+  Qué hace el atacante : Fuerza bruta: 10 contraseñas malas y luego la correcta
+  Resultado esperado   : 5 LOGIN_FAIL → LOCKOUT; la correcta falla durante el bloqueo
+  Resultado obtenido   : 10 intentos fallidos; la contraseña correcta también fue rechazada (cuenta bloqueada)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:42.613Z | AUDIT | LOGIN_FAIL      | 127.0.0.1:50320 | user=atk_brute | motivo=password_incorrecta (1/5) | cn=atk_brute | serial=1142 | tls=TLSv1.3 | suit
+  audit.log            : 2026-10-07T09:54:42.948Z | AUDIT | LOGIN_FAIL      | 127.0.0.1:50336 | user=atk_brute | motivo=password_incorrecta (2/5) | cn=atk_brute | serial=1142 | tls=TLSv1.3 | suit
+  audit.log            : 2026-10-07T09:54:43.257Z | AUDIT | LOGIN_FAIL      | 127.0.0.1:50350 | user=atk_brute | motivo=password_incorrecta (3/5) | cn=atk_brute | serial=1142 | tls=TLSv1.3 | suit
+
+A09 · RF1.b, RS1.a
+  Qué hace el atacante : Certificado revocado: uso del certificado antiguo de atk_rev
+  Resultado esperado   : 'certificate revoked' en el handshake
+  Resultado obtenido   : RECHAZADO (SSLV3_ALERT_CERTIFICATE_REVOKED)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:44.687Z | AUDIT | LOGOUT          | 127.0.0.1:50438 | user=atk_rev | cn=atk_rev | serial=1143 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+  audit.log            : 2026-10-07T09:54:44.703Z | AUDIT | REVOKE          | - | user=atk_rev | serial=1143 | motivo=keyCompromise
+  audit.log            : 2026-10-07T09:54:44.831Z | AUDIT | TLS_REJECT      | 127.0.0.1:50444 | motivo=CERTIFICATE_VERIFY_FAILED | detalle=certificate revoked
+
+A10 · RF1.b
+  Qué hace el atacante : Manipulación directa de la BD: cambiar rol, huella del certificado o borrar registros
+  Resultado esperado   : 'registro inmutable' (trigger)
+  Resultado obtenido   : UPDATE: registro inmutable; UPDATE: registro inmutable; DELETE: registro inmutable
+  Veredicto            : BLOQUEADO
+  audit.log            : (el rechazo ocurre antes de la capa de aplicación o en el cliente)
+
+A11 · RS2, O1
+  Qué hace el atacante : Texto plano contra el puerto TLS: enviar JSON de login sin cifrar a :7443
+  Resultado esperado   : Rechazo en el handshake; nada procesado
+  Resultado obtenido   : respuesta del servidor: b'' (sin JSON de aplicación)
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:45.232Z | AUDIT | TLS_REJECT      | 127.0.0.1:50446 | motivo=WRONG_VERSION_NUMBER
+
+A12 · RS1.b, O5
+  Qué hace el atacante : Servidor falso: (a) certificado autofirmado, (b) certificado de dispositivo (clientAuth) de otra identidad
+  Resultado esperado   : El cliente aborta: posible suplantación
+  Resultado obtenido   : autofirmado: CERTIFICATE_VERIFY_FAILED → «El servidor no es de confianza: posible suplantación. Conexión cancelada.» | cert de dispositivo ajeno: CERTIFICATE_VERIFY_FAILED → «El servidor no es de confianza: posible suplantación. Conexión cancelada.»
+  Veredicto            : BLOQUEADO
+  audit.log            : (el rechazo ocurre antes de la capa de aplicación o en el cliente)
+
+A13 · O5, RS4.a
+  Qué hace el atacante : MITM pasivo (relé): el atacante reenvía y vuelca todo lo que ve
+  Resultado esperado   : La sesión funciona, pero el atacante solo ve registros cifrados
+  Resultado obtenido   : login OK a través del relé=True; bytes vistos=6052; contraseña/JSON legibles=False
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:46.046Z | AUDIT | LOGOUT          | 127.0.0.1:50450 | user=atk_pdi | cn=atk_pdi | serial=1140 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+
+A14 · O5, integridad
+  Qué hace el atacante : MITM activo: invertir un bit de un registro cifrado en tránsito
+  Resultado esperado   : Fallo de integridad AEAD (bad record mac); conexión abortada y auditada
+  Resultado obtenido   : atacante: bit invertido en el registro cifrado nº 3 (74 bytes) → la víctima/servidor abortan: SSLV3_ALERT_BAD_RECORD_MAC
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:46.558Z | AUDIT | TLS_REJECT      | 127.0.0.1:50454 | motivo=RECORD_LAYER_FAILURE
+
+A15 · O5, RS1.b
+  Qué hace el atacante : MITM con terminación TLS: el atacante presenta su propio certificado a la víctima
+  Resultado esperado   : El cliente rechaza; el atacante no obtiene credenciales
+  Resultado obtenido   : CERTIFICATE_VERIFY_FAILED → «El servidor no es de confianza: posible suplantación. Conexión cancelada.»; credenciales robadas=False
+  Veredicto            : BLOQUEADO
+  audit.log            : (el rechazo ocurre antes de la capa de aplicación o en el cliente)
+
+A16 · O5, integridad
+  Qué hace el atacante : Replay: reenviar a :7443 en una conexión nueva los bytes cliente→servidor grabados de una sesión real
+  Resultado esperado   : El handshake falla; no se ejecuta nada
+  Resultado obtenido   : reenviados 2865 bytes; LOGIN_OK/MSG tras el replay=False
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:47.938Z | AUDIT | LOGOUT          | 127.0.0.1:50468 | user=atk_pdi | cn=atk_pdi | serial=1140 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+  audit.log            : 2026-10-07T09:54:48.242Z | AUDIT | TLS_REJECT      | 127.0.0.1:50476 | motivo=RECORD_LAYER_FAILURE
+
+A17 · RF4
+  Qué hace el atacante : Uso tras logout y reanudación de sesión
+  Resultado esperado   : El envío falla; session_reused=False; nuevo handshake completo
+  Resultado obtenido   : envío tras LOGOUT rechazado; session_reused=False
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:49.238Z | AUDIT | LOGOUT          | 127.0.0.1:50484 | user=atk_logout | cn=atk_logout | serial=1144 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+
+A18 · RF2, RF5
+  Qué hace el atacante : Comandos sin autenticar y acceso a un recurso fuera de perfil
+  Resultado esperado   : Rechazo + ACCESS_DENIED auditado
+  Resultado obtenido   : GET sin login → {'ok': False, 'error': 'no autenticado'}; PAS pide bd_investigacion → {'ok': False, 'error': 'ACCESS_DENIED'}
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:49.498Z | AUDIT | UNAUTH_CMD      | 127.0.0.1:50498 | cmd=GET | cn=atk_pas | serial=1141 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+  audit.log            : 2026-10-07T09:54:49.818Z | AUDIT | ACCESS_DENIED   | 127.0.0.1:50514 | user=atk_pas | rol=PAS | recurso=bd_investigacion
+  audit.log            : 2026-10-07T09:54:49.818Z | AUDIT | LOGOUT          | 127.0.0.1:50514 | user=atk_pas | cn=atk_pas | serial=1141 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+
+A19 · RS3.a
+  Qué hace el atacante : Agotamiento: 50 sockets TCP abiertos sin hacer handshake (mientras entra un cliente legítimo)
+  Resultado esperado   : El timeout de 10 s los cierra; el cliente legítimo sigue entrando
+  Resultado obtenido   : cliente legítimo (PDI) entró con 50 conexiones colgadas; 50/50 cerradas por timeout
+  Veredicto            : BLOQUEADO
+  audit.log            : 2026-10-07T09:54:50.325Z | AUDIT | LOGOUT          | 127.0.0.1:51022 | user=atk_pdi | cn=atk_pdi | serial=1140 | tls=TLSv1.3 | suite=TLS_AES_256_GCM_SHA384
+  audit.log            : 2026-10-07T09:55:00.019Z | AUDIT | TLS_REJECT      | 127.0.0.1:50518 | motivo=plazo_handshake_agotado
+  audit.log            : 2026-10-07T09:55:00.021Z | AUDIT | TLS_REJECT      | 127.0.0.1:50526 | motivo=plazo_handshake_agotado
+
+RESUMEN
+  A01  BLOQUEADO
+  A02  BLOQUEADO
+  A03  BLOQUEADO
+  A04  BLOQUEADO
+  A05  BLOQUEADO
+  A06  BLOQUEADO
+  A07  BLOQUEADO
+  A08  BLOQUEADO
+  A09  BLOQUEADO
+  A10  BLOQUEADO
+  A11  BLOQUEADO
+  A12  BLOQUEADO
+  A13  BLOQUEADO
+  A14  BLOQUEADO
+  A15  BLOQUEADO
+  A16  BLOQUEADO
+  A17  BLOQUEADO
+  A18  BLOQUEADO
+  A19  BLOQUEADO
+  → 19/19 bloqueados

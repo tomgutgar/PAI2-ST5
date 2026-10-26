@@ -1,0 +1,53 @@
+# Perfiles X.509 v3 de la CA corporativa U-Secure (RS1.a). Lo usa pki.sh; no editar a mano salvo para cambiar perfiles.
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir             = $ENV::CA_DIR
+database        = $dir/index.txt
+new_certs_dir   = $dir/newcerts
+serial          = $dir/serial
+crlnumber       = $dir/crlnumber
+certificate     = $dir/ca.crt
+private_key     = $dir/ca.key
+default_md      = sha256
+default_days    = 365
+default_crl_days = 30
+policy          = politica
+# RF1.b: re-emisión permitida (mismo CN) solo tras revocar; lo controla pki.sh/servidor
+unique_subject  = no
+copy_extensions = none
+preserve        = no
+
+[ politica ]
+organizationName       = supplied
+organizationalUnitName = supplied
+commonName             = supplied
+
+[ req ]
+distinguished_name = dn
+prompt             = no
+[ dn ]
+O  = Universidad U-Secure
+CN = U-Secure Root CA
+
+[ v3_ca ]
+basicConstraints       = critical, CA:TRUE
+keyUsage               = critical, keyCertSign, cRLSign
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+
+[ v3_server ]
+basicConstraints       = critical, CA:FALSE
+keyUsage               = critical, digitalSignature, keyEncipherment
+extendedKeyUsage       = serverAuth
+subjectAltName         = DNS:localhost, IP:127.0.0.1
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid
+
+[ v3_client ]
+basicConstraints       = critical, CA:FALSE
+keyUsage               = critical, digitalSignature
+extendedKeyUsage       = clientAuth
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid
